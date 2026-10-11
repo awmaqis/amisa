@@ -135,7 +135,7 @@ details summary{cursor:pointer}
 <div id=pn-c hidden></div></aside></main></div>
 
 <div id=cal class=ov hidden><div class=card style="max-width:460px"><div class=row><button id=pm>‹</button><b id=mt style="flex:1;text-align:center"></b><button id=nm>›</button><button class=cl>✕</button></div><div id=grid></div><b id=nd></b><textarea id=nt placeholder="A note, plan or task for this day…"></textarea></div></div>
-<div id=dlg class=ov hidden><div class=card style="max-width:560px"><div class=row><b style="flex:1">Data &amp; backup</b><button class=cl>✕</button></div><small><b>Google Drive sync</b> (phone ⇄ computer, hosted https version only):</small><input id=gcid placeholder="Google OAuth Client ID (…apps.googleusercontent.com)" autocomplete=off><div class=row><button id=gcon class=pri>Connect &amp; sync</button><button id=gnow>Sync now</button><button id=gdis>Turn off</button></div><small class=mu>Your data lives in a Drive folder called “Amisa” (file amisa-data.json). The app can only see files it created.</small><hr style="width:100%;border:0;border-top:1px solid var(--bd)">
+<div id=dlg class=ov hidden><div class=card style="max-width:560px"><div class=row><b style="flex:1">Data &amp; backup</b><button class=cl>✕</button></div><small><b>☁ Cloud sync via GitHub</b> — simplest: automatic, all devices, no Google setup. Needs a <b>private</b> repository (e.g. amisa-data) and a token with “Contents: Read and write” for that repository only.</small><input id=hrepo placeholder="Private data repository, e.g. awmaqis/amisa-data" autocomplete=off><input id=htok type=password placeholder="GitHub token (github_pat_…)" autocomplete=off><div class=row><button id=hcon class=pri>Connect &amp; sync</button><button id=hnow>Sync now</button><button id=hdis>Turn off</button></div><small class=mu>Everything is saved automatically (about 10 seconds after each change) as amisa-data.json in your private repository, and every device picks it up within a minute. The token stays only in this browser.</small><hr style="width:100%;border:0;border-top:1px solid var(--bd)"><small><b>Google Drive sync</b> (phone ⇄ computer, hosted https version only):</small><input id=gcid placeholder="Google OAuth Client ID (…apps.googleusercontent.com)" autocomplete=off><div class=row><button id=gcon class=pri>Connect &amp; sync</button><button id=gnow>Sync now</button><button id=gdis>Turn off</button></div><small class=mu>Your data lives in a Drive folder called “Amisa” (file amisa-data.json). The app can only see files it created.</small><hr style="width:100%;border:0;border-top:1px solid var(--bd)">
 <small>Auto-save to a file on this computer (Chrome / Edge):</small><div class=row><button id=fnew>Create data file…</button><button id=fopen>Open existing data file…</button></div><small>Backup (JSON):</small><textarea id=js></textarea><div class=row><button id=dl>Download .json</button><button id=cp>Copy</button><button id=jfb>Load from file</button><button id=ap2>Import from text box</button></div><small id=st></small><input type=file id=jf accept=.json hidden></div></div>
 <div id=dov class=ov hidden><div class=card id=dcard><div class=row><b id=dt style="flex:1;font-size:17px"></b><button id=dcb>🃏 Cards</button><button class=cl>✕</button></div><div id=dtabs><button data-t=w>Words</button><button data-t=s>Settings</button></div><div id=dbody></div></div></div>
 <div id=ai hidden><div class=hd><b id=atl style="flex:1">✨ AI assistant</b><select id=asc title="What the AI can see"><option value=block>Current block</option><option value=file>Current file</option><option value=all>Everything</option></select><button id=aclr title="New chat">🗑</button><button id=agear title="Settings">⚙</button><button id=aclose>✕</button></div>
@@ -169,7 +169,7 @@ async function fromFile(){try{const v=JSON.parse(await(await fh.getFile()).text(
 async function load(){let v=await idbGet('s');if(!v){try{v=JSON.parse(localStorage.getItem('studymap'))}catch(e){}}
  fh=await idbGet('fh');if(fh){try{if(await fh.queryPermission({mode:'readwrite'})=='granted'){fok=true;const f=await fromFile();if(f&&(f.savedAt||0)>=(v?.savedAt||0))v=f}else $('#fgr').hidden=false}catch(e){fh=null}}return v}
 function save(){clearTimeout(tm);tm=setTimeout(flush,600)}
-async function flush(){S.savedAt=Date.now();if(await idb)await idbSet('s',S);else try{localStorage.setItem('studymap',JSON.stringify(S))}catch(e){}if(fh&&fok)wf();if(G.on)gLater()}
+async function flush(){S.savedAt=Date.now();if(await idb)await idbSet('s',S);else try{localStorage.setItem('studymap',JSON.stringify(S))}catch(e){}if(fh&&fok)wf();if(G.on)gLater();if(H.on)hLater()}
 async function wf(){try{const w=await fh.createWritable();await w.write(JSON.stringify(S));await w.close();$('#fs').textContent='File: '+fh.name+' ✓ '+new Date().toLocaleTimeString()}catch(e){fok=false;$('#fs').textContent='File write failed';$('#fgr').hidden=false}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(tm);flush()}});
 /* ---------- folders & files ---------- */
@@ -860,6 +860,47 @@ $('#gnow').onclick=()=>gSync(1);$('#ggr').onclick=()=>gSync(1);
 $('#gdis').onclick=()=>{G.on=false;G.tok=null;G.fid=G.did=null;G.last=0;G.mt=null;gsave();gst('Sync is off');$('#ggr').hidden=true};
 setInterval(()=>{if(G.on&&!document.hidden&&gdOk())gSync()},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.on&&gdOk())gSync()});
+/* ---------- GitHub sync (private repo, file amisa-data.json) ---------- */
+const H={on:false,tok:'',repo:'',sha:null,last:0},HF='amisa-data.json';let hbusy=0,ht;
+const hsave=()=>idbSet('gh',{...H}),hst=m=>{$('#gs').textContent=m?'☁ '+m:''};
+async function hLoad(){const g=await idbGet('gh');if(g)Object.assign(H,g);$('#hrepo').value=H.repo||'';$('#htok').value=H.tok||''}
+const hInit=()=>{if(H.on)hSync()},hLater=()=>{clearTimeout(ht);ht=setTimeout(()=>hSync(),10000)};
+const b64=t=>{const u=new TextEncoder().encode(t);let b='';for(let i=0;i<u.length;i+=32768)b+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(b)};
+async function hf(path,o={},raw){let r;try{r=await fetch('https://api.github.com/repos/'+H.repo+path,{...o,cache:'no-store',headers:{Authorization:'Bearer '+H.tok,Accept:raw?'application/vnd.github.raw+json':'application/vnd.github+json',...(o.headers||{})}})}catch(e){throw new Error('No connection to GitHub (are you online?)')}
+ if(r.status==401)throw new Error('GitHub token is invalid or expired — create a new one');return r}
+async function hMeta(){const r=await hf('/contents/');if(r.status==404)return null;if(!r.ok)throw new Error('GitHub error '+r.status);const l=await r.json(),f=Array.isArray(l)&&l.find(x=>x.name==HF);return f?{sha:f.sha}:null}
+async function hRaw(){const r=await hf('/contents/'+HF,{},1);if(!r.ok)throw new Error('GitHub error '+r.status);return r.text()}
+async function hPush(sha){const body=JSON.stringify(S),ver=S.savedAt;
+ const r=await hf('/contents/'+HF,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Amisa sync '+new Date().toISOString().slice(0,16).replace('T',' '),content:b64(body),...(sha?{sha}:{})})});
+ if(r.status==409||r.status==422)throw new Error('conflict');
+ if(!r.ok)throw new Error('Upload failed ('+r.status+')'+(r.status==403||r.status==404?' — the token needs “Contents: Read and write” for this repository':''));
+ const j=await r.json();H.sha=j.content.sha;H.last=ver;hsave()}
+async function hPull(rem,sha){const ui=S.ui,cur=S.cur;S=rem;S.ui=ui;norm();S.cur=byId(S.subjects,cur)?cur:S.subjects[0]?.id;go();bell();clearTimeout(tm);await idbSet('s',S);if(fh&&fok)wf();H.last=S.savedAt;H.sha=sha;hsave()}
+async function hSync(manual){if(!H.on||hbusy)return;hbusy=1;hst('Syncing…');let again=0;
+ try{const m=await hMeta(),L=S.savedAt||0,rc=(m?m.sha:null)!=H.sha,lc=L>(H.last||0);
+  if(!m||(lc&&!rc))await hPush(m&&m.sha);
+  else if(rc){let rem;try{rem=JSON.parse(await hRaw())}catch(e){rem=null}
+   if(!rem||!Array.isArray(rem.subjects))await hPush(m.sha);
+   else if(rem.savedAt==L){H.last=L;H.sha=m.sha;hsave()}
+   else if(lc&&confirm('Both this device and the cloud copy have changes since the last sync.\n\nOK = keep THIS device\'s data (replaces the cloud copy)\nCancel = use the cloud copy (replaces this device\'s data)'))await hPush(m.sha);
+   else await hPull(rem,m.sha)}
+  hst('Synced '+new Date().toLocaleTimeString())}
+ catch(e){if(e.message=='conflict'){hst('Cloud copy changed — retrying…');again=1}else hst(e.message)}
+ finally{hbusy=0}
+ if(again)setTimeout(()=>hSync(),1500)}
+$('#hcon').onclick=async()=>{const repo=$('#hrepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/+$/,''),tok=$('#htok').value.trim();
+ if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){hst('Write the repository as login/name, e.g. awmaqis/amisa-data');return}
+ if(!tok){hst('Paste your GitHub token first');return}
+ const old={...H};Object.assign(H,{repo,tok});hst('Checking…');
+ try{const r=await hf('');if(r.status==404)throw new Error('Repository not found, or the token has no access to it');if(!r.ok)throw new Error('GitHub error '+r.status);const j=await r.json();
+  if(!j.private)throw new Error('This repository is PUBLIC — anyone could read your notes. Make it private first (repository Settings → Danger Zone → Change visibility)');
+  if(j.permissions&&!j.permissions.push)throw new Error('This token can only read. Create one with “Contents: Read and write”')}
+ catch(e){Object.assign(H,old);hst(e.message);return}
+ H.sha=null;H.last=0;H.on=true;G.on=false;G.tok=null;$('#ggr').hidden=true;hsave();gsave();hSync(1)};
+$('#hnow').onclick=()=>hSync(1);
+$('#hdis').onclick=()=>{H.on=false;H.sha=null;H.last=0;hsave();hst('Sync is off')};
+setInterval(()=>{if(H.on&&!document.hidden)hSync()},60000);
+document.addEventListener('visibilitychange',()=>{if(H.on&&(!document.hidden||(S.savedAt||0)>(H.last||0)))hSync()});
 /* ---------- touch: pinch-zoom + long-press menu; PWA ---------- */
 const pt=new Map();let pinch=null,lpt=null;
 cv.addEventListener('pointerdown',e=>{pt.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -874,12 +915,12 @@ cv.addEventListener('pointerup',pend);cv.addEventListener('pointercancel',pend);
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
 /* ---------- init ---------- */
 document.execCommand('defaultParagraphSeparator',false,'p');
-(async()=>{const v=await load();try{let a=(await idbGet('aik'))||JSON.parse(localStorage.getItem('amisa_ai')||'null');if(a){if(!a.cfg)a={prov:'deepseek',cfg:{deepseek:{key:a.key,model:a.model,base:a.base}}};AI=a}}catch(e){}aiLabel();await gLoad();
+(async()=>{const v=await load();try{let a=(await idbGet('aik'))||JSON.parse(localStorage.getItem('amisa_ai')||'null');if(a){if(!a.cfg)a={prov:'deepseek',cfg:{deepseek:{key:a.key,model:a.model,base:a.base}}};AI=a}}catch(e){}aiLabel();await gLoad();await hLoad();
  if(v&&Array.isArray(v.subjects)){S=v}else{const a=uid(),f={id:uid(),name:'Math',open:true};
   S={folders:[f],subjects:[{id:uid(),fid:f.id,name:'Main map',v:{x:innerWidth/2-100,y:innerHeight/2,k:1},nodes:[
    Object.assign(mkNode('topic',0,0),{id:a,title:'Algebra',html:'<p>Click a block to open it. The <b>Cards</b> tab holds its flashcards.</p>'}),
    Object.assign(mkNode('module',210,-80,a),{title:'Equations'}),Object.assign(mkNode('module',200,100,a),{title:'Functions'})]}],notes:{}};S.cur=S.subjects[0].id}
- norm();if(!sub())S.cur=S.subjects[0]?.id;go();bell();if(S.notes[key(new Date())])setTimeout(()=>$('#bp').classList.add('show'),700);gInit()})();
+ norm();if(!sub())S.cur=S.subjects[0]?.id;go();bell();if(S.notes[key(new Date())])setTimeout(()=>$('#bp').classList.add('show'),700);gInit();hInit()})();
 
 function aiSet(x,y,ww,hh){const w=$('#ai');ww=Math.max(300,Math.min(ww,innerWidth));hh=Math.max(280,Math.min(hh,innerHeight));x=Math.max(0,Math.min(x,innerWidth-ww));y=Math.max(0,Math.min(y,innerHeight-hh));Object.assign(w.style,{left:x+'px',top:y+'px',bottom:'auto',width:ww+'px',height:hh+'px'})}
 function aiPlace(){const g=S.ui&&S.ui.ai;if(g)aiSet(g.x,g.y,g.w,g.h)}
