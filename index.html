@@ -120,7 +120,7 @@ body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
 details summary{cursor:pointer}
 </style></head><body>
 <div id=app>
-<aside id=side><button id=sclose title="Close menu">✕</button><button id=sfold title="Hide panel">‹</button><h1>Amisa</h1><div id=subs></div><button id=addSub>＋ Folder</button><hr><button id=aibtn>✨ AI assistant</button><button id=calBtn>📅 Calendar</button><button id=exBtn>📝 Exams</button><button id=data>💾 Data &amp; file</button><small id=fs></small><button id=fgr hidden>⚠ Allow file access</button><small id=gs></small><button id=ggr hidden>☁ Sign in to Google Drive</button></aside>
+<aside id=side><button id=sclose title="Close menu">✕</button><button id=sfold title="Hide panel">‹</button><h1>Amisa</h1><div id=subs></div><button id=addSub>＋ Folder</button><hr><button id=aibtn>✨ AI assistant</button><button id=calBtn>📅 Calendar</button><button id=exBtn>📝 Exams</button><button id=data>💾 Data &amp; file</button><small id=fs></small><button id=fgr hidden>⚠ Allow file access</button><small id=gs></small></aside>
 <div id=scrim></div>
 <main id=stage><div id=cv><div id=world><svg id=links></svg><div id=nodes></div></div></div>
 <div id=exv hidden></div><div id=hint></div><button id=menu>☰</button><div id=dbar></div>
@@ -135,7 +135,7 @@ details summary{cursor:pointer}
 <div id=pn-c hidden></div></aside></main></div>
 
 <div id=cal class=ov hidden><div class=card style="max-width:460px"><div class=row><button id=pm>‹</button><b id=mt style="flex:1;text-align:center"></b><button id=nm>›</button><button class=cl>✕</button></div><div id=grid></div><b id=nd></b><textarea id=nt placeholder="A note, plan or task for this day…"></textarea></div></div>
-<div id=dlg class=ov hidden><div class=card style="max-width:560px"><div class=row><b style="flex:1">Data &amp; backup</b><button class=cl>✕</button></div><small><b>☁ Cloud sync via GitHub</b> — simplest: automatic, all devices, no Google setup. Needs a <b>private</b> repository (e.g. amisa-data) and a token with “Contents: Read and write” for that repository only.</small><input id=hrepo placeholder="Private data repository, e.g. awmaqis/amisa-data" autocomplete=off><input id=htok type=password placeholder="GitHub token (github_pat_…)" autocomplete=off><div class=row><button id=hcon class=pri>Connect &amp; sync</button><button id=hnow>Sync now</button><button id=hdis>Turn off</button></div><small class=mu>Everything is saved automatically (about 10 seconds after each change) as amisa-data.json in your private repository, and every device picks it up within a minute. The token stays only in this browser.</small><hr style="width:100%;border:0;border-top:1px solid var(--bd)"><small><b>Google Drive sync</b> (phone ⇄ computer, hosted https version only):</small><input id=gcid placeholder="Google OAuth Client ID (…apps.googleusercontent.com)" autocomplete=off><div class=row><button id=gcon class=pri>Connect &amp; sync</button><button id=gnow>Sync now</button><button id=gdis>Turn off</button></div><small class=mu>Your data lives in a Drive folder called “Amisa” (file amisa-data.json). The app can only see files it created.</small><hr style="width:100%;border:0;border-top:1px solid var(--bd)">
+<div id=dlg class=ov hidden><div class=card style="max-width:560px"><div class=row><b style="flex:1">Data &amp; backup</b><button class=cl>✕</button></div><small><b>☁ Cloud sync via GitHub</b> — automatic, on all your devices. Needs a <b>private</b> repository (e.g. amisa-data) and a token with “Contents: Read and write” for that repository only.</small><input id=hrepo placeholder="Private data repository, e.g. awmaqis/amisa-data" autocomplete=off><input id=htok type=password placeholder="GitHub token (github_pat_…)" autocomplete=off><div class=row><button id=hcon class=pri>Connect &amp; sync</button><button id=hnow>Sync now</button><button id=hdis>Turn off</button></div><small class=mu>Everything is saved automatically (about 10 seconds after each change) as amisa-data.json in your private repository, and every device picks it up within a minute. The token stays only in this browser.</small><hr style="width:100%;border:0;border-top:1px solid var(--bd)">
 <small>Auto-save to a file on this computer (Chrome / Edge):</small><div class=row><button id=fnew>Create data file…</button><button id=fopen>Open existing data file…</button></div><small>Backup (JSON):</small><textarea id=js></textarea><div class=row><button id=dl>Download .json</button><button id=cp>Copy</button><button id=jfb>Load from file</button><button id=ap2>Import from text box</button></div><small id=st></small><input type=file id=jf accept=.json hidden></div></div>
 <div id=dov class=ov hidden><div class=card id=dcard><div class=row><b id=dt style="flex:1;font-size:17px"></b><button id=dcb>🃏 Cards</button><button class=cl>✕</button></div><div id=dtabs><button data-t=w>Words</button><button data-t=s>Settings</button></div><div id=dbody></div></div></div>
 <div id=ai hidden><div class=hd><b id=atl style="flex:1">✨ AI assistant</b><select id=asc title="What the AI can see"><option value=block>Current block</option><option value=file>Current file</option><option value=all>Everything</option></select><button id=aclr title="New chat">🗑</button><button id=agear title="Settings">⚙</button><button id=aclose>✕</button></div>
@@ -169,7 +169,7 @@ async function fromFile(){try{const v=JSON.parse(await(await fh.getFile()).text(
 async function load(){let v=await idbGet('s');if(!v){try{v=JSON.parse(localStorage.getItem('studymap'))}catch(e){}}
  fh=await idbGet('fh');if(fh){try{if(await fh.queryPermission({mode:'readwrite'})=='granted'){fok=true;const f=await fromFile();if(f&&(f.savedAt||0)>=(v?.savedAt||0))v=f}else $('#fgr').hidden=false}catch(e){fh=null}}return v}
 function save(){clearTimeout(tm);tm=setTimeout(flush,600)}
-async function flush(){S.savedAt=Date.now();if(await idb)await idbSet('s',S);else try{localStorage.setItem('studymap',JSON.stringify(S))}catch(e){}if(fh&&fok)wf();if(G.on)gLater();if(H.on)hLater()}
+async function flush(){S.savedAt=Date.now();if(await idb)await idbSet('s',S);else try{localStorage.setItem('studymap',JSON.stringify(S))}catch(e){}if(fh&&fok)wf();if(H.on)hLater()}
 async function wf(){try{const w=await fh.createWritable();await w.write(JSON.stringify(S));await w.close();$('#fs').textContent='File: '+fh.name+' ✓ '+new Date().toLocaleTimeString()}catch(e){fok=false;$('#fs').textContent='File write failed';$('#fgr').hidden=false}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(tm);flush()}});
 /* ---------- folders & files ---------- */
@@ -820,46 +820,6 @@ async function dAiRun(){if(dAiBusy||!D)return;const d=D;if(!dAiSel.size)return d
   dAiSay((dAiStop?'Stopped. ':'Done. ')+'Added '+total+' new words.')}
  catch(e){dAiSay('⚠ '+e.message+(total?'\n(Words added before the error were kept: '+total+')':''))}
  dAiBusy=0;if(D==d&&dtab=='w')dRender();dbar()}
-/* ---------- Google Drive sync (folder "Amisa", file amisa-data.json) ---------- */
-const G={cid:'',on:false,tok:null,exp:0,fid:null,did:null,last:0,mt:null},API='https://www.googleapis.com/drive/v3/files';let gbusy=0,gt;
-const gsave=()=>idbSet('gd',{...G}),gst=m=>{$('#gs').textContent=m?'☁ '+m:''},gdOk=()=>G.tok&&Date.now()<G.exp-60000;
-async function gLoad(){const g=await idbGet('gd');if(g)Object.assign(G,g);if(!gdOk())G.tok=null;$('#gcid').value=G.cid||''}
-function gNeed(){gst('Sign in to sync');$('#ggr').hidden=false}
-function gInit(){if(G.on)gdOk()?gSync():gNeed()}
-function gLater(){clearTimeout(gt);gt=setTimeout(()=>gdOk()?gSync():gNeed(),4000)}
-const gScript=()=>new Promise((res,rej)=>{if(window.google?.accounts?.oauth2)return res();const s=E('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=()=>rej(new Error('Could not load Google sign-in (are you online?)'));document.head.append(s)});
-async function gAuth(){await gScript();return new Promise((res,rej)=>{google.accounts.oauth2.initTokenClient({client_id:G.cid,scope:'https://www.googleapis.com/auth/drive.file',
- callback:r=>{if(r.error)return rej(new Error(r.error_description||r.error));G.tok=r.access_token;G.exp=Date.now()+(+r.expires_in||3600)*1000;gsave();res()},
- error_callback:e=>rej(new Error('Sign-in was cancelled or blocked ('+(e.type||'error')+')'))}).requestAccessToken({prompt:''})})}
-async function gd(url,o={}){const r=await fetch(url,{...o,headers:{...(o.headers||{}),Authorization:'Bearer '+G.tok}});if(r.status==401){G.tok=null;gsave();throw new Error('Session expired — sign in again')}if(!r.ok)throw new Error('Drive error '+r.status+': '+(await r.text()).slice(0,140));return r}
-const gq=q=>API+'?fields=files(id)&q='+encodeURIComponent(q);
-async function gIds(){if(G.fid&&G.did)return;
- let f=(await(await gd(gq("mimeType='application/vnd.google-apps.folder' and name='Amisa' and trashed=false"))).json()).files[0];
- if(!f)f=await(await gd(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Amisa',mimeType:'application/vnd.google-apps.folder'})})).json();
- G.fid=f.id;const d=(await(await gd(gq("'"+G.fid+"' in parents and name='amisa-data.json' and trashed=false"))).json()).files[0];G.did=d?d.id:null}
-async function gPush(){const body=JSON.stringify(S),ver=S.savedAt;
- const ini=await gd('https://www.googleapis.com/upload/drive/v3/files'+(G.did?'/'+G.did:'')+'?uploadType=resumable&fields=id,modifiedTime',{method:G.did?'PATCH':'POST',headers:{'Content-Type':'application/json; charset=UTF-8'},body:JSON.stringify(G.did?{}:{name:'amisa-data.json',parents:[G.fid],mimeType:'application/json'})});
- const r=await fetch(ini.headers.get('Location'),{method:'PUT',headers:{'Content-Type':'application/json'},body});if(!r.ok)throw new Error('Upload failed ('+r.status+')');
- const j=await r.json();G.did=j.id;G.mt=j.modifiedTime;G.last=ver;gsave()}
-async function gPull(rem,mt){const ui=S.ui,cur=S.cur;S=rem;S.ui=ui;norm();S.cur=byId(S.subjects,cur)?cur:S.subjects[0]?.id;go();bell();clearTimeout(tm);await idbSet('s',S);if(fh&&fok)wf();G.last=S.savedAt;G.mt=mt;gsave()}
-async function gSync(manual){if(!G.on||gbusy)return;if(location.protocol=='file:'){gst('Google sync works only on the hosted (https) version');return}
- gbusy=1;gst('Syncing…');
- try{if(!gdOk()){if(!manual)throw new Error('Sign in to sync');await gAuth()}$('#ggr').hidden=true;await gIds();
-  const m=G.did?await(await gd(API+'/'+G.did+'?fields=modifiedTime')).json():null,L=S.savedAt||0,rc=!m||m.modifiedTime!=G.mt,lc=L>(G.last||0);
-  if(!G.did||(lc&&!rc))await gPush();
-  else if(rc){const rem=await(await gd(API+'/'+G.did+'?alt=media')).json();
-   if(!Array.isArray(rem.subjects))await gPush();
-   else if(rem.savedAt==L){G.last=L;G.mt=m.modifiedTime;gsave()}
-   else if(lc&&confirm('Both this device and Google Drive have changes since the last sync.\n\nOK = keep THIS device\'s data (replaces the Drive copy)\nCancel = use the Drive copy (replaces this device\'s data)'))await gPush();
-   else await gPull(rem,m.modifiedTime)}
-  gst('Synced '+new Date().toLocaleTimeString())}
- catch(e){if(/Drive error 404/.test(e.message)){G.fid=G.did=null;gsave()}gst(e.message);if(!gdOk())$('#ggr').hidden=false}
- gbusy=0}
-$('#gcon').onclick=()=>{G.cid=$('#gcid').value.trim();if(!G.cid){gst('Paste your Google Client ID first');return}G.on=true;gsave();gSync(1)};
-$('#gnow').onclick=()=>gSync(1);$('#ggr').onclick=()=>gSync(1);
-$('#gdis').onclick=()=>{G.on=false;G.tok=null;G.fid=G.did=null;G.last=0;G.mt=null;gsave();gst('Sync is off');$('#ggr').hidden=true};
-setInterval(()=>{if(G.on&&!document.hidden&&gdOk())gSync()},60000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.on&&gdOk())gSync()});
 /* ---------- GitHub sync (private repo, file amisa-data.json) ---------- */
 const H={on:false,tok:'',repo:'',sha:null,last:0},HF='amisa-data.json';let hbusy=0,ht;
 const hsave=()=>idbSet('gh',{...H}),hst=m=>{$('#gs').textContent=m?'☁ '+m:''};
@@ -896,7 +856,7 @@ $('#hcon').onclick=async()=>{const repo=$('#hrepo').value.trim().replace(/^https
   if(!j.private)throw new Error('This repository is PUBLIC — anyone could read your notes. Make it private first (repository Settings → Danger Zone → Change visibility)');
   if(j.permissions&&!j.permissions.push)throw new Error('This token can only read. Create one with “Contents: Read and write”')}
  catch(e){Object.assign(H,old);hst(e.message);return}
- H.sha=null;H.last=0;H.on=true;G.on=false;G.tok=null;$('#ggr').hidden=true;hsave();gsave();hSync(1)};
+ H.sha=null;H.last=0;H.on=true;hsave();hSync(1)};
 $('#hnow').onclick=()=>hSync(1);
 $('#hdis').onclick=()=>{H.on=false;H.sha=null;H.last=0;hsave();hst('Sync is off')};
 setInterval(()=>{if(H.on&&!document.hidden)hSync()},60000);
@@ -915,12 +875,12 @@ cv.addEventListener('pointerup',pend);cv.addEventListener('pointercancel',pend);
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
 /* ---------- init ---------- */
 document.execCommand('defaultParagraphSeparator',false,'p');
-(async()=>{const v=await load();try{let a=(await idbGet('aik'))||JSON.parse(localStorage.getItem('amisa_ai')||'null');if(a){if(!a.cfg)a={prov:'deepseek',cfg:{deepseek:{key:a.key,model:a.model,base:a.base}}};AI=a}}catch(e){}aiLabel();await gLoad();await hLoad();
+(async()=>{const v=await load();try{let a=(await idbGet('aik'))||JSON.parse(localStorage.getItem('amisa_ai')||'null');if(a){if(!a.cfg)a={prov:'deepseek',cfg:{deepseek:{key:a.key,model:a.model,base:a.base}}};AI=a}}catch(e){}aiLabel();await hLoad();
  if(v&&Array.isArray(v.subjects)){S=v}else{const a=uid(),f={id:uid(),name:'Math',open:true};
   S={folders:[f],subjects:[{id:uid(),fid:f.id,name:'Main map',v:{x:innerWidth/2-100,y:innerHeight/2,k:1},nodes:[
    Object.assign(mkNode('topic',0,0),{id:a,title:'Algebra',html:'<p>Click a block to open it. The <b>Cards</b> tab holds its flashcards.</p>'}),
    Object.assign(mkNode('module',210,-80,a),{title:'Equations'}),Object.assign(mkNode('module',200,100,a),{title:'Functions'})]}],notes:{}};S.cur=S.subjects[0].id}
- norm();if(!sub())S.cur=S.subjects[0]?.id;go();bell();if(S.notes[key(new Date())])setTimeout(()=>$('#bp').classList.add('show'),700);gInit();hInit()})();
+ norm();if(!sub())S.cur=S.subjects[0]?.id;go();bell();if(S.notes[key(new Date())])setTimeout(()=>$('#bp').classList.add('show'),700);hInit()})();
 
 function aiSet(x,y,ww,hh){const w=$('#ai');ww=Math.max(300,Math.min(ww,innerWidth));hh=Math.max(280,Math.min(hh,innerHeight));x=Math.max(0,Math.min(x,innerWidth-ww));y=Math.max(0,Math.min(y,innerHeight-hh));Object.assign(w.style,{left:x+'px',top:y+'px',bottom:'auto',width:ww+'px',height:hh+'px'})}
 function aiPlace(){const g=S.ui&&S.ui.ai;if(g)aiSet(g.x,g.y,g.w,g.h)}
