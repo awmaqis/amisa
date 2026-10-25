@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Amisa · Kartlar</title>
+<style>
+html,body{margin:0;padding:0;background:#fff;color:#000;font:22px/1.35 Georgia,serif}
+button,select,input{font:inherit;color:#000;background:#fff;border:2px solid #000;border-radius:6px;padding:8px 14px;margin:3px}
+button.on{background:#000;color:#fff}
+#top{border-bottom:3px solid #000;padding:6px;display:block}
+#top button{min-width:120px}
+#top .r{float:right}
+#main{padding:10px 14px}
+.chip{display:inline-block;border:2px solid #000;border-radius:14px;padding:0 10px;font-size:16px;margin-right:6px}
+.w{border-bottom:1px solid #000;padding:10px 0}
+.w b{font-size:26px}
+.mu{font-size:17px}
+.dh{font-weight:bold;border-bottom:3px solid #000;margin-top:14px}
+#st{position:fixed;left:0;top:0;right:0;bottom:0;background:#fff;z-index:9;padding:12px;box-sizing:border-box}
+#st .fc{position:absolute;left:12px;right:12px;top:60px;bottom:150px;border:3px solid #000;border-radius:10px;text-align:center;overflow:auto;padding:20px;box-sizing:border-box}
+#st .big{font-size:44px;font-weight:bold;margin-top:8%}
+#st .ans{font-size:34px;margin-top:20px;border-top:2px solid #000;padding-top:20px}
+#st .rate{position:absolute;left:0;right:0;bottom:8px;text-align:center}
+#st .rate button{width:23%;min-width:0;padding:14px 0;font-size:22px}
+#gear{position:fixed;left:0;top:0;right:0;bottom:0;background:#fff;z-index:8;padding:14px;overflow:auto}
+</style></head><body>
+<div id="top"><button id="t1" class="on">Словари</button><button id="t2">Карточки</button><span class="r"><button id="rf">↻</button></span></div>
+<div id="main"></div>
+<script>
+if(!Element.prototype.append){Element.prototype.append=function(){for(var i=0;i<arguments.length;i++){var a=arguments[i];this.appendChild(typeof a=='string'?document.createTextNode(a):a)}}}
+var AYT=[['mat','Matematik'],['geo','Geometri'],['fiz','Fizik'],['kim','Kimya'],['biy','Biyoloji'],['edb','Edebiyat'],['tar','Tarih'],['cog','Coğrafya'],['fel','Felsefe'],['psi','Psikoloji'],['sos','Sosyoloji'],['mnt','Mantık'],['din','Din Kültürü'],['k','Karışık']],SN={},SK=[],DAY=864e5,STEPS=[1,10],PAGE=30;
+for(var i=0;i<AYT.length;i++){SN[AYT[i][0]]=AYT[i][1];SK.push(AYT[i][0])}
+var TR='abcçdefgğhıijklmnoöprsştuüvyz'.split('');
+var DATA=null,CFG={},PROG={},tab=1,dq='',dlt='',pg=0,mode='home',Q=[],qi=0,flip=false,miss=[],res=[],did=null;
+function $(s){return document.querySelector(s)}
+function E(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function B(t,f,c){var b=E('button',c,t);b.onclick=f;return b}
+function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function trl(s){return(s||'').toLocaleLowerCase('tr')}
+function fold(s){return trl(s).replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u')}
+function ltr(w){var c=trl((w||'').trim()).charAt(0);return TR.indexOf(c)>=0?c:'#'}
+function up(c){return c=='#'?'#':c.toLocaleUpperCase('tr')}
+function tcmp(a,b){return trl(a.w).localeCompare(trl(b.w),'tr')}
+function has(a,x){return a.indexOf(x)>=0}
+function tog(a,x){var i=a.indexOf(x);if(i>=0)a.splice(i,1);else a.push(x)}
+/* ---- parse meanings (same as Amisa) ---- */
+function parseM(m){var o={tr:'',ru:'',en:''},t=[],l=String(m||'').split('\n'),x;for(var i=0;i<l.length;i++){if(x=l[i].match(/^\s*RU:\s*(.*)$/))o.ru=x[1].trim();else if(x=l[i].match(/^\s*EN:\s*(.*)$/))o.en=x[1].trim();else t.push(l[i])}o.tr=t.join('\n').trim();return o}
+function secs(e){var r=[];if(e.x){for(var i=0;i<SK.length;i++)if(e.x[SK[i]])r.push([SK[i],e.x[SK[i]]]);return r}return(e.m||'').trim()?[['k',parseM(e.m)]]:[]}
+function fbT(e){var o={ru:'',en:''},a=secs(e);for(var i=0;i<a.length;i++){if(!o.ru&&a[i][1].ru)o.ru=a[i][1].ru;if(!o.en&&a[i][1].en)o.en=a[i][1].en}return o}
+/* ---- spaced repetition (copied from Amisa) ---- */
+function nc(c){if(c.s)return c;c.ef=2.5;c.stp=0;var t=Date.now();if(c.lv==2){c.s='r';c.ivd=14;c.due=t+14*DAY}else if(c.lv==1){c.s='r';c.ivd=Math.max(1,Math.round((c.iv||8)/24));c.due=c.due||t}else if(c.seen){c.s='l';c.ivd=0;c.due=c.due||t}else{c.s='n';c.ivd=0;c.due=0}return c}
+function sy(c){c.lv=c.s=='r'?(c.ivd>=14?2:1):0;return c}
+function isDue(c){return(nc(c).due||0)<=Date.now()}
+function stName(c){nc(c);return c.s=='n'?'New':c.s=='l'?'Not learned':c.ivd>=14?'Learned':'Weak'}
+function fmt(ms){var m=ms/6e4;if(m<1)return'<1m';if(m<60)return Math.round(m)+'m';var h=m/60;if(h<24)return Math.round(h)+'h';var d=h/24;if(d<30)return Math.round(d)+'d';if(d<365)return(d/30).toFixed(1).replace('.0','')+'mo';return(d/365).toFixed(1).replace('.0','')+'y'}
+function nxt(c,k){nc(c);var o={s:c.s,stp:c.stp||0,ivd:c.ivd||0,ef:c.ef||2.5,m:0,d:0};
+if(c.s=='r'){var iv=o.ivd;if(k==0){o.ef=Math.max(1.3,o.ef-.2);o.s='l';o.stp=0;o.ivd=Math.max(1,Math.round(iv*.5));o.m=STEPS[0]}else{if(k==1){o.ivd=Math.max(iv+1,Math.round(iv*1.2));o.ef=Math.max(1.3,o.ef-.15)}else if(k==2)o.ivd=Math.max(iv+1,Math.round(iv*o.ef));else{o.ivd=Math.max(iv+1,Math.round(iv*o.ef*1.3));o.ef+=.15}o.d=o.ivd}}
+else{var st=c.s=='n'?0:o.stp;o.s='l';if(k==0){o.stp=0;o.m=STEPS[0]}else if(k==1){o.stp=st;o.m=st==0?(STEPS[0]+STEPS[1])/2:STEPS[st]}else if(k==2&&st+1<STEPS.length){o.stp=st+1;o.m=STEPS[st+1]}else{o.s='r';o.stp=0;o.ivd=k==3?Math.max(4,o.ivd):Math.max(1,o.ivd);o.d=o.ivd}}
+o.ms=o.d?o.d*DAY:o.m*6e4;o.due=Date.now()+o.ms;return o}
+function grade(c,k){var o=nxt(c,k);c.s=o.s;c.stp=o.stp;c.ivd=o.ivd;c.ef=o.ef;c.due=o.due;c.last=Date.now();c.seen=(c.seen||0)+1;if(k==0)c.lap=(c.lap||0)+1;sy(c);return o.ms<18e5}
+function pri(c){return(c.lv==0?2:1)*(1+Math.min(5,c.lap||0)*.3)+Math.min(3,(Date.now()-(c.last||0))/864e5)*.2+Math.random()*.8}
+var PF=['s','stp','ivd','ef','due','last','seen','lap','lv'];
+function saveProg(c){var o={};for(var i=0;i<PF.length;i++)o[PF[i]]=c[PF[i]];PROG[c.id]=o;ls('kprog',PROG)}
+/* ---- load data.json (same folder) ---- */
+function load(cb){var x=new XMLHttpRequest();x.open('GET','data.json?t='+Date.now(),true);x.onreadystatechange=function(){if(x.readyState!=4)return;
+ if(x.status==200||(x.status==0&&x.responseText)){try{DATA=JSON.parse(x.responseText)}catch(e){DATA=ls('kdata')}if(DATA)ls('kdata',DATA)}else DATA=ls('kdata');
+ if(DATA)prep();cb()};x.send()}
+function prep(){PROG=ls('kprog')||{};CFG=ls('kcfg')||{};var ui=DATA.ui||{};
+ if(DATA.savedAt&&CFG.seen!=DATA.savedAt&&DATA.ui){CFG.seen=DATA.savedAt;CFG.csec=ui.csec||[];CFG.dsec=ui.dsec||[];CFG.dfil=ui.dfil||'all';CFG.dir=CFG.dir||{};
+  var ds=DATA.dicts||[];for(var i=0;i<ds.length;i++)CFG.dir[ds[i].id]=ds[i].dir||'wm';if(ui.did)CFG.did=ui.did}
+ CFG.csec=CFG.csec||[];CFG.dsec=CFG.dsec||[];CFG.dir=CFG.dir||{};
+ var ds2=DATA.dicts||[];if(!CFG.did||!dict(CFG.did))CFG.did=ds2[0]?ds2[0].id:null;
+ for(var j=0;j<ds2.length;j++)for(var n=0;n<ds2[j].w.length;n++){var c=ds2[j].w[n],p=PROG[c.id];if(p&&(p.last||0)>(c.last||0))for(var f=0;f<PF.length;f++)c[PF[f]]=p[PF[f]];nc(c)}
+ ls('kcfg',CFG)}
+function dict(id){var d=DATA&&DATA.dicts||[];for(var i=0;i<d.length;i++)if(d[i].id==id)return d[i];return null}
+function fname(d){var f=DATA.folders||[];for(var i=0;i<f.length;i++)if(f[i].id==d.fid)return f[i].name;return'Словарь'}
+function setTab(t){tab=t;mode='home';$('#t1').className=t==1?'on':'';$('#t2').className=t==2?'on':'';render()}
+function render(){var v=$('#main');v.innerHTML='';if(!DATA||!DATA.dicts||!DATA.dicts.length){v.append(E('p','mu',DATA?'Нет словарей.':'data.json не найден. Откройте Amisa и опубликуйте данные.'));return}
+ var D=dict(CFG.did),top=E('div');top.append(B('⚙ '+fname(D)+' ('+D.w.length+')',gear));v.append(top);if(tab==1)words(v,D);else cards(v,D)}
+function gear(){var o=E('div');o.id='gear';o.append(E('b',0,'Выберите словарь:'),E('br'));var ds=DATA.dicts;
+ for(var i=0;i<ds.length;i++)(function(d){o.append(B(fname(d)+' — '+d.w.length,function(){CFG.did=d.id;ls('kcfg',CFG);pg=0;dlt='';o.remove();render()},CFG.did==d.id?'on':''),E('br'))})(ds[i]);
+ o.append(B('Закрыть',function(){o.remove()}));document.body.append(o)}
+function chips(v,sel,counts,done){var r=E('div'),a=B('All',function(){sel.length=0;ls('kcfg',CFG);done()},sel.length?'':'on');r.append(a);
+ for(var i=0;i<AYT.length;i++)(function(k,t){if(!counts[k]&&!has(sel,k))return;r.append(B(t+' ('+(counts[k]||0)+')',function(){tog(sel,k);ls('kcfg',CFG);done()},has(sel,k)?'on':''))})(AYT[i][0],AYT[i][1]);v.append(r)}
+function cnt(w){var n={};for(var i=0;i<w.length;i++){var s=secs(w[i]);for(var j=0;j<s.length;j++)n[s[j][0]]=(n[s[j][0]]||0)+1}return n}
+function words(v,D){var q=E('input');q.placeholder='🔍 Поиск…';q.value=dq;q.style.width='90%';v.append(q);
+ chips(v,CFG.dsec,cnt(D.w),function(){pg=0;render()});var lt=E('div'),box=E('div');v.append(lt,box);
+ function fill(){var f=fold(dq.trim()),base=[],i;for(i=0;i<D.w.length;i++){var e=D.w[i],ok=!f||fold(e.w).indexOf(f)>=0||fold(e.m).indexOf(f)>=0;if(ok&&CFG.dsec.length){ok=false;var s=secs(e);for(var j=0;j<s.length;j++)if(has(CFG.dsec,s[j][0]))ok=true}if(ok)base.push(e)}
+  var hs={};for(i=0;i<base.length;i++)hs[ltr(base[i].w)]=1;if(dlt&&!hs[dlt])dlt='';lt.innerHTML='';
+  function mk(t,k){var b=B(t,function(){dlt=dlt==k?'':k;pg=0;fill()},dlt==k?'on':'');if(k&&!hs[k])b.disabled=true;lt.append(b)}
+  mk('All','');for(i=0;i<TR.length;i++)mk(up(TR[i]),TR[i]);if(hs['#'])mk('#','#');
+  var rows=[];for(i=0;i<base.length;i++)if(!dlt||ltr(base[i].w)==dlt)rows.push(base[i]);rows.sort(tcmp);
+  var pages=Math.max(1,Math.ceil(rows.length/PAGE));if(pg>=pages)pg=pages-1;box.innerHTML='';
+  box.append(E('div','mu',rows.length+' / '+D.w.length+' · '+(pg+1)+'/'+pages));
+  var cur=null,sl=rows.slice(pg*PAGE,pg*PAGE+PAGE);for(i=0;i<sl.length;i++)box.append(wrow(sl[i],cur==null?(cur=ltr(sl[i].w)):cur));
+  var nv=E('div');nv.append(B('◀',function(){if(pg>0){pg--;fill();scrollTo(0,0)}}),B('▶',function(){if(pg<pages-1){pg++;fill();scrollTo(0,0)}}));box.append(nv)}
+ q.oninput=function(){dq=q.value;pg=0;fill()};fill()}
+function wrow(e){var r=E('div','w'),all=secs(e),pick=[],F=fbT(e),i;for(i=0;i<all.length;i++)if(!CFG.dsec.length||has(CFG.dsec,all[i][0]))pick.push(all[i]);
+ var h=E('div');h.append(E('b',0,e.w),E('span','chip',' '+stName(e)));r.append(h);
+ for(i=0;i<pick.length;i++){var k=pick[i][0],c=pick[i][1],l=E('div');if(all.length>1||k!='k'||CFG.dsec.length)l.append(E('span','chip',SN[k]));l.append(E('span',0,c.tr||''));r.append(l);
+  var ru=c.ru||F.ru,en=c.en||F.en,p=[];if(ru)p.push('RU: '+ru);if(en)p.push('EN: '+en);if(p.length)r.append(E('div','mu',p.join('    ')))}return r}
+function cards(v,D){if(mode=='study'){study(v,D);return}
+ var all0=D.w,n=cnt(all0),sel=CFG.csec,i,k;for(i=sel.length-1;i>=0;i--)if(!n[sel[i]])sel.splice(i,1);
+ var cs=[];for(i=0;i<all0.length;i++){if(!sel.length)cs.push(all0[i]);else{var s=secs(all0[i]);for(var j=0;j<s.length;j++)if(has(sel,s[j][0])){cs.push(all0[i]);break}}}
+ var due=[],un=[];for(i=0;i<cs.length;i++){if(isDue(cs[i]))due.push(cs[i]);if(cs[i].lv<2)un.push(cs[i])}
+ var dr=E('div');dr.append(E('span','mu','Направление: '));var dirs=[['wm','Слово → значение'],['mw','Значение → слово'],['both','Оба (случайно)']],cd=CFG.dir[D.id]||'wm';
+ for(i=0;i<dirs.length;i++)(function(k,t){dr.append(B(t,function(){CFG.dir[D.id]=k;ls('kcfg',CFG);render()},cd==k?'on':''))})(dirs[i][0],dirs[i][1]);v.append(dr,E('div','mu','Категория (одна или несколько):'));
+ chips(v,sel,n,render);v.append(E('div','mu',cs.length+' cards · '+due.length+' due · '+un.length+' not yet learned · '+(cs.length-un.length)+' learned'));var r=E('div');
+ if(due.length)r.append(B('▶ Учить ('+due.length+' due)',function(){go(due,D)},'on'));
+ if(un.length&&un.length>due.length)r.append(B(due.length?'Все невыученные ('+un.length+')':'▶ Нет due — все невыученные ('+un.length+')',function(){go(un,D)}));
+ if(cs.length&&cs.length>un.length)r.append(B('Всё ('+cs.length+')',function(){go(cs,D)}));v.append(r)}
+function go(list,D){var cd=CFG.dir[D.id]||'wm',a=list.slice().sort(function(x,y){return pri(y)-pri(x)});Q=[];for(var i=0;i<a.length;i++)Q.push({c:a[i],rev:cd=='mw'||(cd=='both'&&Math.random()<.5)});qi=0;flip=false;miss=[];res=[];mode='study';render()}
+function study(v,D){var o=E('div');o.id='st';var old=$('#st');if(old)old.remove();
+ var back=B('✕ Назад',function(){o.remove();mode='home';render()});o.append(back);
+ if(qi>=Q.length){var n=function(k){var t=0;for(var i=0;i<res.length;i++)if(res[i]==k)t++;return t};o.append(E('h2',0,'Сессия завершена'),E('p',0,n(0)+' again · '+n(1)+' hard · '+n(2)+' good · '+n(3)+' easy'));
+  if(miss.length)o.append(B('Повторить ошибки ('+miss.length+')',function(){var m=[];for(var i=0;i<miss.length;i++)if(m.indexOf(miss[i])<0)m.push(miss[i]);o.remove();go(m,D)},'on'));document.body.append(o);return}
+ var it=Q[qi],c=it.c;o.append(E('span','mu','  '+(qi+1)+' / '+Q.length));var fc=E('div','fc');fc.append(E('div','big',(it.rev?c.m:c.w)||'(empty)'));
+ if(flip)fc.append(E('div','ans',(it.rev?c.w:c.m)||'(empty)'));else fc.append(E('div','mu','Нажмите, чтобы увидеть ответ'));
+ fc.onclick=function(){if(!flip){flip=true;study(v,D)}};o.append(fc);
+ if(flip){var rb=E('div','rate'),nm=['Again','Hard','Good','Easy'];for(var k=0;k<4;k++)(function(k){var b=B(nm[k]+' '+fmt(nxt(c,k).ms),function(){var sh=grade(c,k);res.push(k);if(k==0)miss.push(c);saveProg(c);qi++;flip=false;if(sh)Q.splice(Math.min(Q.length,qi+3),0,it);study(v,D)});rb.append(b)})(k);o.append(rb)}
+ document.body.append(o)}
+$('#t1').onclick=function(){setTab(1)};$('#t2').onclick=function(){setTab(2)};
+$('#rf').onclick=function(){if(mode=='study')return;load(render)};
+load(render);
+</script></body></html>
